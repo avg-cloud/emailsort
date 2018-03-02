@@ -74,32 +74,32 @@ if (is_array($imap_array)) {
 						$whandle = fopen($full_path . $fullname,'w');
 						if(imap_savebody($mbox, $whandle, $val,'')){
 							imap_mail_move ( $mbox , $val , 'gespeichert' );
-							$lhandle = fopen(EMAILPATH . "log.txt","a");
+							$lhandle = fopen(LOGPATH . "log.txt","a");
 							fwrite($lhandle,strftime(TIMESTRING) . " [SUCCESS] Email Nr. " . $val . " wurde in den Ordner '" . $subdir . "' gespeichert und nach 'gespeichert' verschoben\n");
 							fclose($lhandle);
 						}
 						fclose($whandle);
 					}else{
 						imap_mail_move ( $mbox , $val , 'fehler' );
-						$lhandle = fopen(EMAILPATH . "log.txt","a");
+						$lhandle = fopen(LOGPATH . "log.txt","a");
 						fwrite($lhandle,strftime(TIMESTRING) . " [FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Fall-Ordner)\n");
 						fclose($lhandle);
 					}
 				}
 			}else{
 				imap_mail_move ( $mbox , $val , 'fehler' );
-				$lhandle = fopen(EMAILPATH . "log.txt","a");
+				$lhandle = fopen(LOGPATH . "log.txt","a");
 				fwrite($lhandle,strftime(TIMESTRING) . " [FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Bereichs-Ordner)\n");
 				fclose($lhandle);
 			}			
 		}else{
 			imap_mail_move ( $mbox , $val , 'fehler' );
-			$lhandle = fopen(EMAILPATH . "log.txt","a");
+			$lhandle = fopen(LOGPATH . "log.txt","a");
 			fwrite($lhandle,strftime(TIMESTRING) . " [ERROR] Aus Email Nr. " . $val . " konnte keine Fallnummer extrahiert werden (preg_match), sie wurde nicht gespeichert und nach 'fehler' verschoben\n");
 			fclose($lhandle);
 		}
 	}
-	$lhandle = fopen(EMAILPATH . "log.txt","a");
+	$lhandle = fopen(LOGPATH . "log.txt","a");
 	fwrite($lhandle,"\n");
 	fclose($lhandle);
 }
