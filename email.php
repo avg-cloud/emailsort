@@ -68,7 +68,7 @@ if (is_array($imap_array)) {
 				}
 				if(!empty($subdir)){
 					// Dateinamen bilden (wie sollen die Dateien eigentlich heißen?)
-					$name = $val."_".$fall."_".time();
+					$name = strftime("%Y-%m-%d_%H-%M-%S") . "_AKM" . $fall . "_" . $val;
 					$fullname = $name.'.eml';
 					// Ablagepfad bilden, '$path' siehe config
 					$full_path = EMAILPATH . $folder . "/" . $subdir . "/";
@@ -96,7 +96,10 @@ if (is_array($imap_array)) {
 			fclose($lhandle);
 		}
 	}
+	$lhandle = fopen(EMAILPATH . "log.txt","a");
+	fwrite($lhandle,"\n");
+	fclose($lhandle);
 }
-// Löscht alle durch imap_delete oder  markierten mails
+// Löscht alle durch imap_delete oder imap_mail_move markierten mails
 imap_close($mbox,CL_EXPUNGE);
 ?>
