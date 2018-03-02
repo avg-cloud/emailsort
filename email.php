@@ -41,58 +41,61 @@ if (is_array($imap_array)) {
 		
 		// Fallnummer herausholen (RegEx überprüfen)
 		preg_match('/AKM([0-9]+);/',$subject,$matches);
-		
-		foreach($dirs AS $val2){
-			$bereich = explode("-",$val2);
-			if(is_numeric($matches[1])){
+		if(isset($matches) && !empty($matches[1]) && is_numeric($matches[1])){
+			foreach($dirs AS $val2){
+				$bereich = explode("-",$val2);
+				// if(isset($matches) && !empty($matches[1]) && is_numeric($matches[1])){
 				$fall = $matches[1];
 				$folder = '';
 				if($bereich[0] <= $fall && $fall <= $bereich[1]){
 					$folder = $val2;
 					break;
 				}
-			}else{
-				echo $val . "scheitert hier bei 1<br>";
 			}
-		}
-		// hier sollte $folder gefüllt sein
-		if(!empty($folder)){
-			$subdirs = get_dirs(EMAILPATH . $folder."/");
-			if(!empty($subdirs)){
-				$subdir = "";
-				foreach($subdirs AS $val3){
-					if(strstr($val3,$fall)){
-						$subdir = $val3;
-						break;
+			// hier sollte $folder gefüllt sein
+			if(!empty($folder)){
+				$subdirs = get_dirs(EMAILPATH . $folder."/");
+				if(!empty($subdirs)){
+					$subdir = "";
+					foreach($subdirs AS $val3){
+						if(strstr($val3,$fall)){
+							$subdir = $val3;
+							break;
+						}
 					}
-				}
-				if(!empty($subdir)){
-					// Dateinamen bilden (wie sollen die Dateien eigentlich heißen?)
-					$name = strftime("%Y-%m-%d_%H-%M-%S") . "_AKM" . $fall . "_" . $val;
-					$fullname = $name.'.eml';
-					// Ablagepfad bilden, '$path' siehe config
-					$full_path = EMAILPATH . $folder . "/" . $subdir . "/";
-					
-					// Datei schreiben
-					$whandle = fopen($full_path . $fullname,'w');
-					if(imap_savebody($mbox, $whandle, $val,'')){
-						imap_mail_move ( $mbox , $val , 'gespeichert' );
+					if(!empty($subdir)){
+						// Dateinamen bilden (wie sollen die Dateien eigentlich heißen?)
+						$name = strftime("%Y-%m-%d_%H-%M-%S") . "_AKM" . $fall . "_" . $val;
+						$fullname = $name.'.eml';
+						// Ablagepfad bilden, '$path' siehe config
+						$full_path = EMAILPATH . $folder . "/" . $subdir . "/";
+						
+						// Datei schreiben
+						$whandle = fopen($full_path . $fullname,'w');
+						if(imap_savebody($mbox, $whandle, $val,'')){
+							imap_mail_move ( $mbox , $val , 'gespeichert' );
+							$lhandle = fopen(EMAILPATH . "log.txt","a");
+							fwrite($lhandle,strftime(TIMESTRING) . " [SUCCESS] Email Nr. " . $val . " wurde in den Ordner '" . $subdir . "' gespeichert und nach 'gespeichert' verschoben\n");
+							fclose($lhandle);
+						}
+						fclose($whandle);
+					}else{
+						imap_mail_move ( $mbox , $val , 'fehler' );
 						$lhandle = fopen(EMAILPATH . "log.txt","a");
-						fwrite($lhandle,strftime(TIMESTRING) . " [SUCCESS] Email Nr. " . $val . " wurde in den Ordner '" . $subdir . "' gespeichert und nach 'gespeichert' verschoben\n");
+						fwrite($lhandle,strftime(TIMESTRING) . " [FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Fall-Ordner)\n");
 						fclose($lhandle);
 					}
-					fclose($whandle);
-				}else{
-					imap_mail_move ( $mbox , $val , 'fehler' );
-					$lhandle = fopen(EMAILPATH . "log.txt","a");
-					fwrite($lhandle,strftime(TIMESTRING) . " [FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Fall-Ordner)\n");
-					fclose($lhandle);
 				}
-			}
+			}else{
+				imap_mail_move ( $mbox , $val , 'fehler' );
+				$lhandle = fopen(EMAILPATH . "log.txt","a");
+				fwrite($lhandle,strftime(TIMESTRING) . " [FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Bereichs-Ordner)\n");
+				fclose($lhandle);
+			}			
 		}else{
 			imap_mail_move ( $mbox , $val , 'fehler' );
 			$lhandle = fopen(EMAILPATH . "log.txt","a");
-			fwrite($lhandle,strftime(TIMESTRING) . " [FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Bereichs-Ordner)\n");
+			fwrite($lhandle,strftime(TIMESTRING) . " [ERROR] Aus Email Nr. " . $val . " konnte keine Fallnummer extrahiert werden (preg_match), sie wurde nicht gespeichert und nach 'fehler' verschoben\n");
 			fclose($lhandle);
 		}
 	}
