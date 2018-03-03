@@ -1,5 +1,14 @@
 <?php
 require_once("config.inc.php");
+// Logverzeichnis anlegen
+if(!is_dir( LOGPATH )){
+	if(mkdir( LOGPATH )){
+		echo LOGPATH . " wurde angelegt.";
+	}
+}else{
+	echo LOGPATH . " existiert bereits.";
+}
+die();
 function get_dirs ($path){
 	$dirs = array();
 	$d = dir($path);
@@ -22,16 +31,16 @@ $mbox = imap_open("{".$email_server.":993/imap/ssl/novalidate-cert}INBOX", $emai
 // Array mit allen Msg-IDs der Mails die '$crit' im Betreff haben, siehe config
 $imap_array = imap_search($mbox, $crit );
 
-// Gibt es Ergebnisse?
+// Gibt es neue Mails?
 if (is_array($imap_array)) {
-	
+	// Bereichs-Verzeichnisse holen
 	$dirs = get_dirs(EMAILPATH);
-	/*
-	var_dump($dirs);
-	var_dump($imap_array);
-	die();
-	*/
-	// Jede mail für sich
+	// Logfile starten
+	$lhandle = fopen(LOGPATH . "log.txt","a");
+	fwrite($lhandle,strftime(TIMESTRING) . "\n");
+	fclose($lhandle);
+
+	// Jede mail für sich, Mail-Schleife
 	foreach($imap_array AS $val){
 		$header = '';
 		$subject = '';
@@ -41,10 +50,11 @@ if (is_array($imap_array)) {
 		
 		// Fallnummer herausholen (RegEx überprüfen)
 		preg_match('/AKM([0-9]+);/',$subject,$matches);
+		// Fallnummer aus Emailheader holen, sonst Fehlerprozedur 1
 		if(isset($matches) && !empty($matches[1]) && is_numeric($matches[1])){
+			// Passendes Bereichs-Verzeichnis suchen
 			foreach($dirs AS $val2){
 				$bereich = explode("-",$val2);
-				// if(isset($matches) && !empty($matches[1]) && is_numeric($matches[1])){
 				$fall = $matches[1];
 				$folder = '';
 				if($bereich[0] <= $fall && $fall <= $bereich[1]){
@@ -52,57 +62,63 @@ if (is_array($imap_array)) {
 					break;
 				}
 			}
-			// hier sollte $folder gefüllt sein
+			// Wenn passendes Bereichs-Verzeichnis gefunden wurde, passendes Fall-Verzeichnis suchen, sonst Fehlerprozedur 2
 			if(!empty($folder)){
 				$subdirs = get_dirs(EMAILPATH . $folder."/");
+				// Wenn es Unterverzeichnisse gibt, suche passendes
 				if(!empty($subdirs)){
-					$subdir = "";
+					$subdir = ""; /// Korrekte Zeile?
 					foreach($subdirs AS $val3){
 						if(strstr($val3,$fall)){
 							$subdir = $val3;
 							break;
 						}
 					}
+					// Wenn passendes Fall-Verzeichnis gefunden wurde, passendes Subdir suchen, sonst Fehlerprozedur 3
 					if(!empty($subdir)){
 						// Dateinamen bilden (wie sollen die Dateien eigentlich heißen?)
-						$name = strftime("%Y-%m-%d_%H-%M-%S") . "_AKM" . $fall . "_" . $val;
+						$name = strftime("%Y-%m-%d_%H-%M-%S") . "_" . $company . $fall . "_" . $val;
 						$fullname = $name.'.eml';
-						// Ablagepfad bilden, '$path' siehe config
+						// Ablagepfad bilden, 'EMAILPATH' siehe config
 						$full_path = EMAILPATH . $folder . "/" . $subdir . "/";
 						
-						// Datei schreiben
+						// Mail-Datei schreiben, Original-Mail in 'gespeichert' verschieben, Logeintrag
 						$whandle = fopen($full_path . $fullname,'w');
 						if(imap_savebody($mbox, $whandle, $val,'')){
-							imap_mail_move ( $mbox , $val , 'gespeichert' );
+							imap_mail_move ( $mbox , $val , SUCCESBOX );
 							$lhandle = fopen(LOGPATH . "log.txt","a");
-							fwrite($lhandle,strftime(TIMESTRING) . " [SUCCESS] Email Nr. " . $val . " wurde in den Ordner '" . $subdir . "' gespeichert und nach 'gespeichert' verschoben\n");
+							fwrite($lhandle,"[SUCCESS] Email Nr. " . $val . " wurde in den Ordner '" . $subdir . "' gespeichert und nach 'gespeichert' verschoben\n");
 							fclose($lhandle);
 						}
 						fclose($whandle);
 					}else{
-						imap_mail_move ( $mbox , $val , 'fehler' );
+						// Fehlerprozedur 3
+						imap_mail_move ( $mbox , $val , FAILBOX );
 						$lhandle = fopen(LOGPATH . "log.txt","a");
-						fwrite($lhandle,strftime(TIMESTRING) . " [FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Fall-Ordner)\n");
+						fwrite($lhandle,"[FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Fall-Ordner)\n");
 						fclose($lhandle);
 					}
 				}
 			}else{
-				imap_mail_move ( $mbox , $val , 'fehler' );
+				// Fehlerprozedur 2
+				imap_mail_move ( $mbox , $val , FAILBOX );
 				$lhandle = fopen(LOGPATH . "log.txt","a");
-				fwrite($lhandle,strftime(TIMESTRING) . " [FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Bereichs-Ordner)\n");
+				fwrite($lhandle,"[FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Bereichs-Ordner)\n");
 				fclose($lhandle);
 			}			
 		}else{
-			imap_mail_move ( $mbox , $val , 'fehler' );
+			// Fehlerprozedur 1
+			imap_mail_move ( $mbox , $val , FAILBOX );
 			$lhandle = fopen(LOGPATH . "log.txt","a");
-			fwrite($lhandle,strftime(TIMESTRING) . " [ERROR] Aus Email Nr. " . $val . " konnte keine Fallnummer extrahiert werden (preg_match), sie wurde nicht gespeichert und nach 'fehler' verschoben\n");
+			fwrite($lhandle,"[FAILED] Aus Email Nr. " . $val . " konnte keine Fallnummer extrahiert werden (preg_match), sie wurde nicht gespeichert und nach 'fehler' verschoben\n");
 			fclose($lhandle);
 		}
-	}
+	} // Ende Mail-Schleife
+	// Logfile abschließen
 	$lhandle = fopen(LOGPATH . "log.txt","a");
 	fwrite($lhandle,"\n");
 	fclose($lhandle);
 }
-// Löscht alle durch imap_delete oder imap_mail_move markierten mails
+// Löscht alle durch imap_delete oder imap_mail_move markierten mails, schließt Mail-Handler
 imap_close($mbox,CL_EXPUNGE);
 ?>
