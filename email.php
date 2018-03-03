@@ -2,13 +2,8 @@
 require_once("config.inc.php");
 // Logverzeichnis anlegen
 if(!is_dir( LOGPATH )){
-	if(mkdir( LOGPATH )){
-		echo LOGPATH . " wurde angelegt.";
-	}
-}else{
-	echo LOGPATH . " existiert bereits.";
+	mkdir( LOGPATH ));
 }
-die();
 function get_dirs ($path){
 	$dirs = array();
 	$d = dir($path);
