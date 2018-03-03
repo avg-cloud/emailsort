@@ -51,7 +51,7 @@ if (is_array($imap_array)) {
 			preg_match('/AKM([0-9]+);/',$subject,$matches);
 		} // Und wenn nicht?
 		
-		// Fallnummer aus Emailheader holen, sonst Fehlerprozedur 1
+		// Fallnummer wurde gefunden, sonst Fehlerprozedur 1
 		if(isset($matches) && !empty($matches[1]) && is_numeric($matches[1])){
 			// Passendes Bereichs-Verzeichnis suchen
 			foreach($dirs AS $val2){
@@ -75,7 +75,7 @@ if (is_array($imap_array)) {
 							break;
 						}
 					}
-					// Wenn passendes Fall-Verzeichnis gefunden wurde, passendes Subdir suchen, sonst Fehlerprozedur 3
+					// Wenn passendes Fall-Verzeichnis gefunden wurde, Mail speichern, sonst Fehlerprozedur 3
 					if(!empty($subdir)){
 						// Dateinamen bilden (wie sollen die Dateien eigentlich heißen?)
 						$name = strftime("%Y-%m-%d_%H-%M-%S") . "_" . $company . $fall . "_" . $val;
