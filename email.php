@@ -31,10 +31,7 @@ if (is_array($imap_array)) {
 	// Bereichs-Verzeichnisse holen
 	$dirs = get_dirs(EMAILPATH);
 	// Logfile starten
-	$lhandle = fopen(LOGPATH . "log.txt","a");
-	fwrite($lhandle,strftime(TIMESTRING) . "\n");
-	fclose($lhandle);
-
+	$logcontent = array();
 	// Jede mail für sich, Mail-Schleife
 	foreach($imap_array AS $val){
 		$header = '';
@@ -68,7 +65,7 @@ if (is_array($imap_array)) {
 				$subdirs = get_dirs(EMAILPATH . $folder."/");
 				// Wenn es Unterverzeichnisse gibt, suche passendes
 				if(!empty($subdirs)){
-					$subdir = ""; /// Korrekte Zeile?
+					$subdir = "";
 					foreach($subdirs AS $val3){
 						if(strstr($val3,$fall)){
 							$subdir = $val3;
@@ -87,37 +84,63 @@ if (is_array($imap_array)) {
 						$whandle = fopen($full_path . $fullname,'w');
 						if(imap_savebody($mbox, $whandle, $val,'')){
 							imap_mail_move ( $mbox , $val , SUCCESBOX );
-							$lhandle = fopen(LOGPATH . "log.txt","a");
-							fwrite($lhandle,"[SUCCESS] Email Nr. " . $val . " wurde in den Ordner '" . $subdir . "' gespeichert und nach 'gespeichert' verschoben\n");
-							fclose($lhandle);
+							$logcontent['SUCCESS'][] = "Email Nr. " . $val . " wurde in den Ordner '" . $subdir . "' gespeichert und nach 'gespeichert' verschoben\n";
 						}
 						fclose($whandle);
 					}else{
 						// Fehlerprozedur 3
 						imap_mail_move ( $mbox , $val , FAILBOX );
-						$lhandle = fopen(LOGPATH . "log.txt","a");
-						fwrite($lhandle,"[FAILED] Email Nr. " . $val . " (\"" . $berteff . "...\") wurde nicht gespeichert und nach 'fehler' verschoben (kein Fall-Ordner)\n");
-						fclose($lhandle);
+						$logcontent['FAILED']['Fall'][] = "Email Nr. " . $val . " (\"" . $berteff . "...\") wurde nicht gespeichert und nach 'fehler' verschoben\n";
 					}
 				}
 			}else{
 				// Fehlerprozedur 2
 				imap_mail_move ( $mbox , $val , FAILBOX );
-				$lhandle = fopen(LOGPATH . "log.txt","a");
-				fwrite($lhandle,"[FAILED] Email Nr. " . $val . " (\"" . $berteff . "...\") wurde nicht gespeichert und nach 'fehler' verschoben (kein Bereichs-Ordner)\n");
-				fclose($lhandle);
+				$logcontent['FAILED']['Bereich'][] = "Email Nr. " . $val . " (\"" . $berteff . "...\") wurde nicht gespeichert und nach 'fehler' verschoben\n";
 			}			
 		}else{
 			// Fehlerprozedur 1
 			imap_mail_move ( $mbox , $val , FAILBOX );
-			$lhandle = fopen(LOGPATH . "log.txt","a");
-			fwrite($lhandle,"[FAILED] Aus Email Nr. " . $val . " (\"" . $berteff . "...\") konnte keine Fallnummer extrahiert werden (preg_match), sie wurde nicht gespeichert und nach 'fehler' verschoben\n");
-			fclose($lhandle);
+			$logcontent['FAILED']['preg_match'][] = "Aus Email Nr. " . $val . " (\"" . $berteff . "...\") konnte keine Fallnummer extrahiert werden, sie wurde nicht gespeichert und nach 'fehler' verschoben\n";
 		}
 	} // Ende Mail-Schleife
-	// Logfile abschließen
+	
+	// Logfile schreiben
 	$lhandle = fopen(LOGPATH . "log.txt","a");
-	fwrite($lhandle,"\n");
+	fwrite($lhandle,strftime(TIMESTRING) . "\n");
+	if(!empty($logcontent)){
+		if(is_array($logcontent['SUCCESS'])){
+			fwrite($lhandle,"[SUCCESS] " . count($logcontent['SUCCESS']) . " Einträge\n");
+			foreach($logcontent['SUCCESS'] AS $value){
+				fwrite($lhandle,$value);
+			}
+		fwrite($lhandle,"\n");
+		}
+		if(is_array($logcontent['FAILED']['preg_match'])){
+			fwrite($lhandle,"[FAILED/Preg_Match] (keine Fall-Nr.) " . count($logcontent['FAILED']['preg_match']) . " Einträge\n");
+			foreach($logcontent['FAILED']['preg_match'] AS $value){
+				fwrite($lhandle,$value);
+			}
+		fwrite($lhandle,"\n");
+		}
+		if(is_array($logcontent['FAILED']['Bereich'])){
+			fwrite($lhandle,"[FAILED/Bereich] (kein Bereichs-Ordner) " . count($logcontent['FAILED']['Bereich']) . " Einträge\n");
+			foreach($logcontent['FAILED']['Bereich'] AS $value){
+				fwrite($lhandle,$value);
+			}
+		fwrite($lhandle,"\n");
+		}
+		if(is_array($logcontent['FAILED']['Fall'])){
+			fwrite($lhandle,"[FAILED/Fall] (kein Fall-Ordner) " . count($logcontent['FAILED']['Fall']) . " Einträge\n");
+			foreach($logcontent['FAILED']['Fall'] AS $value){
+				fwrite($lhandle,$value);
+			}
+		fwrite($lhandle,"\n");
+		}
+	}else{
+		fwrite($lhandle,"Nichts gemacht.\n");
+		fwrite($lhandle,"\n");
+	}
 	fclose($lhandle);
 }
 // Löscht alle durch imap_delete oder imap_mail_move markierten mails, schließt Mail-Handler
