@@ -2,7 +2,7 @@
 require_once("config.inc.php");
 // Logverzeichnis anlegen
 if(!is_dir( LOGPATH )){
-	mkdir( LOGPATH ));
+	mkdir( LOGPATH );
 }
 function get_dirs ($path){
 	$dirs = array();
@@ -41,10 +41,16 @@ if (is_array($imap_array)) {
 		$subject = '';
 		
 		$header = imap_headerinfo($mbox,$val);
-		$subject = $header->subject;
+		if (property_exists($header, 'subject')) {
+			$presubject = imap_mime_header_decode($header->subject);
+			$subject = $presubject[0]->text;
+			$berteff = substr($subject,0,32);
+			// testing
+			print $subject . "\n";
+			// Fallnummer herausholen (RegEx überprüfen)
+			preg_match('/AKM([0-9]+);/',$subject,$matches);
+		} // Und wenn nicht?
 		
-		// Fallnummer herausholen (RegEx überprüfen)
-		preg_match('/AKM([0-9]+);/',$subject,$matches);
 		// Fallnummer aus Emailheader holen, sonst Fehlerprozedur 1
 		if(isset($matches) && !empty($matches[1]) && is_numeric($matches[1])){
 			// Passendes Bereichs-Verzeichnis suchen
@@ -90,7 +96,7 @@ if (is_array($imap_array)) {
 						// Fehlerprozedur 3
 						imap_mail_move ( $mbox , $val , FAILBOX );
 						$lhandle = fopen(LOGPATH . "log.txt","a");
-						fwrite($lhandle,"[FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Fall-Ordner)\n");
+						fwrite($lhandle,"[FAILED] Email Nr. " . $val . " (\"" . $berteff . "...\") wurde nicht gespeichert und nach 'fehler' verschoben (kein Fall-Ordner)\n");
 						fclose($lhandle);
 					}
 				}
@@ -98,14 +104,14 @@ if (is_array($imap_array)) {
 				// Fehlerprozedur 2
 				imap_mail_move ( $mbox , $val , FAILBOX );
 				$lhandle = fopen(LOGPATH . "log.txt","a");
-				fwrite($lhandle,"[FAILED] Email Nr. " . $val . " wurde nicht gespeichert und nach 'fehler' verschoben (kein Bereichs-Ordner)\n");
+				fwrite($lhandle,"[FAILED] Email Nr. " . $val . " (\"" . $berteff . "...\") wurde nicht gespeichert und nach 'fehler' verschoben (kein Bereichs-Ordner)\n");
 				fclose($lhandle);
 			}			
 		}else{
 			// Fehlerprozedur 1
 			imap_mail_move ( $mbox , $val , FAILBOX );
 			$lhandle = fopen(LOGPATH . "log.txt","a");
-			fwrite($lhandle,"[FAILED] Aus Email Nr. " . $val . " konnte keine Fallnummer extrahiert werden (preg_match), sie wurde nicht gespeichert und nach 'fehler' verschoben\n");
+			fwrite($lhandle,"[FAILED] Aus Email Nr. " . $val . " (\"" . $berteff . "...\") konnte keine Fallnummer extrahiert werden (preg_match), sie wurde nicht gespeichert und nach 'fehler' verschoben\n");
 			fclose($lhandle);
 		}
 	} // Ende Mail-Schleife
