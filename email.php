@@ -2,7 +2,7 @@
 require_once("config.inc.php");
 // Logverzeichnis anlegen
 if(!is_dir( LOGPATH )){
-	mkdir( LOGPATH ));
+	mkdir( LOGPATH );
 }
 function get_dirs ($path){
 	$dirs = array();
