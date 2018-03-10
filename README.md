@@ -15,7 +15,9 @@ Make sure to run PHP Composer install to get dependencies:
 composer install
 ```
 
-Rename ```config.json.dist``` in app dir to ```config.json``` and change the settings within.
+Rename ```config.json.dist``` in ```app``` dir to ```config.json``` and change the settings within.
+
+Make sure file ```error.log``` exists and is writable in ```log``` directory.
 
 ## License
 
