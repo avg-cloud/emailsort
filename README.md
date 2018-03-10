@@ -15,6 +15,8 @@ Make sure to run PHP Composer install to get dependencies:
 composer install
 ```
 
+Rename ```config.json.dist``` in app dir to ```config.json``` and change the settings within.
+
 ## License
 
 MIT License
