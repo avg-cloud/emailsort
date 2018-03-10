@@ -1,2 +1,4 @@
-config.inc.php
-git.txt
+/vendor/
+/app/config.json
+/log/error.log
+
