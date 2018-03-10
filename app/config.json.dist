@@ -1,0 +1,35 @@
+{
+    "mail": {
+        "srv": "mail.server.tld",
+        "usr": "username",
+        "pwd": "password",
+        "address": "user@maildomain.tld",
+        "sbmatch": "/someRegexToMatchInSubject/",
+        "allowed_senders": [
+            "sender.One@somedomain.tld",
+            "sender.Two@somedomain.tld"
+        ]
+    },
+    "imap": {
+        "suffix": ":993/imap/ssl/novalidate-cert",
+        "inbox": "INBOX",
+        "successbox": "successbox",
+        "failbox": "failbox"
+    },
+    "admin_mail": {
+        "address": "admin@somedomain.tld",
+        "subject": "E-Mail-Automation Warning",
+        "body": "Some mails were moved to failbox. Check them."
+    },
+    "app": {
+        "savepath": "/absolute/server/path/to/save/dir/",
+        "owner": "www-data",
+        "group": "www-data",
+        "mod": "0660",
+        "log_level": "DEBUG",
+        "move_mail": true,
+        "change_file_perm": true,
+        "allowed_senders_only": true,
+        "signed_mail_only": true
+    }
+}
